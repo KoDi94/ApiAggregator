@@ -1,0 +1,26 @@
+@ApiAggregator_HostAddress = http://localhost:5166
+
+### Get JWT Token
+POST {{ApiAggregator_HostAddress}}/api/auth/token
+Accept: application/json
+
+### Get Aggregated Data (requires token)
+# Copy the token from the previous response and set it as the Bearer token below
+GET {{ApiAggregator_HostAddress}}/api/aggregated?pageSize=5
+Accept: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Aggregated Data - Filter by category
+GET {{ApiAggregator_HostAddress}}/api/aggregated?category=Weather&pageSize=5
+Accept: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Aggregated Data - Filter by search term
+GET {{ApiAggregator_HostAddress}}/api/aggregated?search=quantum&sortBy=date&sortOrder=desc
+Accept: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get Request Statistics
+GET {{ApiAggregator_HostAddress}}/api/statistics
+Accept: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
