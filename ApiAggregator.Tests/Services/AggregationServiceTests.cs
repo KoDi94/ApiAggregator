@@ -15,19 +15,19 @@ public class AggregationServiceTests
 
     private static readonly List<AggregatedItem> WeatherData =
     [
-        new() { Id = "w1", Title = "Sunny London", Category = "Weather", Source = "WeatherSim", Date = new DateTime(2024, 6, 1) },
-        new() { Id = "w2", Title = "Rainy Paris", Category = "Weather", Source = "WeatherSim", Date = new DateTime(2024, 6, 3) }
+        new() { Id = "w1", Title = "Sunny London", Description = "sunny", Category = "Weather", Source = "WeatherSim", Date = new DateTime(2024, 6, 1), Url = "https://example.com/w1" },
+        new() { Id = "w2", Title = "Rainy Paris", Description = "rainy", Category = "Weather", Source = "WeatherSim", Date = new DateTime(2024, 6, 3), Url = "https://example.com/w2" }
     ];
 
     private static readonly List<AggregatedItem> NewsData =
     [
-        new() { Id = "n1", Title = "Quantum Breakthrough", Description = "quantum computing advances", Category = "Tech", Source = "NewsSim", Date = new DateTime(2024, 6, 2) },
-        new() { Id = "n2", Title = "Sports Final", Category = "Sports", Source = "NewsSim", Date = new DateTime(2024, 5, 30) }
+        new() { Id = "n1", Title = "Quantum Breakthrough", Description = "quantum computing advances", Category = "Tech", Source = "NewsSim", Date = new DateTime(2024, 6, 2), Url = "https://example.com/n1" },
+        new() { Id = "n2", Title = "Sports Final", Description = "sports news", Category = "Sports", Source = "NewsSim", Date = new DateTime(2024, 5, 30), Url = "https://example.com/n2" }
     ];
 
     private static readonly List<AggregatedItem> MusicData =
     [
-        new() { Id = "m1", Title = "New Album Drop", Category = "Music", Source = "MusicSim", Date = new DateTime(2024, 6, 5) }
+        new() { Id = "m1", Title = "New Album Drop", Description = "new music", Category = "Music", Source = "MusicSim", Date = new DateTime(2024, 6, 5), Url = "https://example.com/m1" }
     ];
 
     public AggregationServiceTests()
@@ -136,7 +136,7 @@ public class AggregationServiceTests
     {
         var cachedData = new List<AggregatedItem>
         {
-            new() { Id = "cached-1", Title = "Cached Item", Category = "Weather", Source = "WeatherSim" }
+            new() { Id = "cached-1", Title = "Cached Item", Description = "cached", Category = "Weather", Source = "WeatherSim", Url = "https://example.com/cached" }
         };
 
         _cacheMock.Setup(x => x.GetAsync<List<AggregatedItem>>("api_data_WeatherSim", It.IsAny<CancellationToken>()))

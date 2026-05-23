@@ -2,12 +2,12 @@ namespace ApiAggregator.Domain.Models;
 
 public class AggregatedItem
 {
-    public string Id { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string Category { get; set; } = string.Empty;
-    public string Source { get; set; } = string.Empty;
+    public required string Id { get; set; }
+    public required string Title { get; set; }
+    public required string Description { get; set; }
+    public required string Category { get; set; }
+    public required string Source { get; set; }
     public DateTime Date { get; set; }
-    public string Url { get; set; } = string.Empty;
+    public required string Url { get; set; }
     public Dictionary<string, object>? Metadata { get; set; }
 }

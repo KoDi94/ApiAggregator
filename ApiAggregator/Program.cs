@@ -1,11 +1,5 @@
-using System.Text;
-using ApiAggregator.Application.Services;
-using ApiAggregator.Domain.Interfaces;
 using ApiAggregator.Endpoints;
-using ApiAggregator.Infrastructure.Clients;
-using ApiAggregator.Infrastructure.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using ApiAggregator.Infrastructure;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,59 +31,10 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-builder.Services.AddMemoryCache();
-builder.Services.AddAuthorization();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        var jwtSettings = builder.Configuration.GetSection("Jwt");
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
-        };
-    });
-
-builder.Services.AddSingleton<IStatisticsService, StatisticsService>();
-builder.Services.AddSingleton<ICacheService, CacheService>();
-builder.Services.AddScoped<IAggregationService, AggregationService>();
-builder.Services.AddHostedService<PerformanceAnomalyService>();
-
-builder.Services.AddHttpClient<OpenWeatherMapClient>(client =>
-{
-    var url = builder.Configuration["ExternalApis:OpenWeatherMap:BaseUrl"]
-        ?? throw new InvalidOperationException("ExternalApis:OpenWeatherMap:BaseUrl is not configured");
-    client.BaseAddress = new Uri(url);
-    client.Timeout = TimeSpan.FromSeconds(10);
-});
-builder.Services.AddScoped<IExternalApiClient>(sp => sp.GetRequiredService<OpenWeatherMapClient>());
-
-builder.Services.AddHttpClient<NewsApiClient>(client =>
-{
-    var url = builder.Configuration["ExternalApis:NewsApi:BaseUrl"]
-        ?? throw new InvalidOperationException("ExternalApis:NewsApi:BaseUrl is not configured");
-    client.BaseAddress = new Uri(url);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("ApiAggregator/1.0");
-    client.Timeout = TimeSpan.FromSeconds(10);
-});
-builder.Services.AddScoped<IExternalApiClient>(sp => sp.GetRequiredService<NewsApiClient>());
-
-builder.Services.AddHttpClient<GitHubClient>(client =>
-{
-    var url = builder.Configuration["ExternalApis:GitHub:BaseUrl"]
-        ?? throw new InvalidOperationException("ExternalApis:GitHub:BaseUrl is not configured");
-    client.BaseAddress = new Uri(url);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("ApiAggregator/1.0");
-    client.Timeout = TimeSpan.FromSeconds(10);
-});
-builder.Services.AddScoped<IExternalApiClient>(sp => sp.GetRequiredService<GitHubClient>());
+builder.Services.AddExternalApisFromConfig(builder.Configuration);
+builder.Services.AddAggregationServices();
+builder.Services.AddJwtFromConfig(builder.Configuration);
 
 var app = builder.Build();
 
