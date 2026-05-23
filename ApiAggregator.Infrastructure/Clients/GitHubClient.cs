@@ -16,12 +16,11 @@ public class GitHubClient(HttpClient http, IConfiguration config) : BaseApiClien
 
     protected override async Task<List<AggregatedItem>> FetchFromApiAsync(CancellationToken ct)
     {
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("ApiAggregator/1.0");
         Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
 
         var url = "search/repositories?q=stars:>1000&sort=stars&order=desc&per_page=10";
         var response = await Http.GetAsync(url, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         var data = await response.Content.ReadFromJsonAsync<GitHubSearchResponse>(ct);
         var items = new List<AggregatedItem>();

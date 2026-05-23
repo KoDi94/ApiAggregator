@@ -62,26 +62,34 @@ builder.Services.AddSingleton<ICacheService, CacheService>();
 builder.Services.AddScoped<IAggregationService, AggregationService>();
 builder.Services.AddHostedService<PerformanceAnomalyService>();
 
-builder.Services.AddHttpClient<IExternalApiClient, OpenWeatherMapClient>(client =>
+builder.Services.AddHttpClient<OpenWeatherMapClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ExternalApis:OpenWeatherMap:BaseUrl"]
-        ?? "https://api.openweathermap.org/data/2.5");
+    var url = builder.Configuration["ExternalApis:OpenWeatherMap:BaseUrl"]
+        ?? throw new InvalidOperationException("ExternalApis:OpenWeatherMap:BaseUrl is not configured");
+    client.BaseAddress = new Uri(url);
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddScoped<IExternalApiClient>(sp => sp.GetRequiredService<OpenWeatherMapClient>());
 
-builder.Services.AddHttpClient<IExternalApiClient, NewsApiClient>(client =>
+builder.Services.AddHttpClient<NewsApiClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ExternalApis:NewsApi:BaseUrl"]
-        ?? "https://newsapi.org/v2");
+    var url = builder.Configuration["ExternalApis:NewsApi:BaseUrl"]
+        ?? throw new InvalidOperationException("ExternalApis:NewsApi:BaseUrl is not configured");
+    client.BaseAddress = new Uri(url);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("ApiAggregator/1.0");
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddScoped<IExternalApiClient>(sp => sp.GetRequiredService<NewsApiClient>());
 
-builder.Services.AddHttpClient<IExternalApiClient, GitHubClient>(client =>
+builder.Services.AddHttpClient<GitHubClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ExternalApis:GitHub:BaseUrl"]
-        ?? "https://api.github.com");
+    var url = builder.Configuration["ExternalApis:GitHub:BaseUrl"]
+        ?? throw new InvalidOperationException("ExternalApis:GitHub:BaseUrl is not configured");
+    client.BaseAddress = new Uri(url);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("ApiAggregator/1.0");
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddScoped<IExternalApiClient>(sp => sp.GetRequiredService<GitHubClient>());
 
 var app = builder.Build();
 

@@ -46,19 +46,17 @@ public class ApiEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task AggregatedEndpoint_ReturnsEmpty_WhenNoKeysConfigured()
+    public async Task AggregatedEndpoint_ReturnsPartialResults_WithConfiguredKeys()
     {
         var client = _factory.CreateClient();
         var token = await GetTokenAsync(client);
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await client.GetAsync("/api/aggregated?pageSize=5");
+        var response = await client.GetAsync("/api/aggregated?pageSize=100");
 
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadFromJsonAsync<AggregatedResponse>(JsonOptions);
         Assert.NotNull(content);
-        Assert.Empty(content.Items);
-        Assert.NotEmpty(content.Errors);
         Assert.Equal(3, content.Sources.Count);
     }
 

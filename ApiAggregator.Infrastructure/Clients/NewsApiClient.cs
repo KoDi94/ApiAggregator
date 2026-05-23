@@ -30,7 +30,7 @@ public class NewsApiClient : BaseApiClient
         {
             var url = $"top-headlines?country={_country}&category={category}&pageSize=1&apiKey={_apiKey}";
             var response = await Http.GetAsync(url, ct);
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessOrThrowAsync(response, ct);
 
             var data = await response.Content.ReadFromJsonAsync<NewsResponse>(ct);
             if (data?.Articles != null)

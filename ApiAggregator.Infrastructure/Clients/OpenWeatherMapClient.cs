@@ -29,7 +29,7 @@ public class OpenWeatherMapClient : BaseApiClient
         {
             var url = $"weather?q={city}&units=metric&appid={_apiKey}";
             var response = await Http.GetAsync(url, ct);
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessOrThrowAsync(response, ct);
 
             var data = await response.Content.ReadFromJsonAsync<WeatherResponse>(ct);
             if (data?.Weather.Length > 0)
