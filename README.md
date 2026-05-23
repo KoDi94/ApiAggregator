@@ -163,12 +163,6 @@ Performance bucket thresholds:
 
 Keys are stored via `dotnet user-secrets` (never committed to git):
 
-```bash
-dotnet user-secrets set "ExternalApis:OpenWeatherMap:ApiKey" "your-key" --project ApiAggregator
-dotnet user-secrets set "ExternalApis:NewsApi:ApiKey" "your-key" --project ApiAggregator
-dotnet user-secrets set "ExternalApis:GitHub:Token" "your-token" --project ApiAggregator
-```
-
 - **OpenWeatherMap**: [free API key](https://openweathermap.org/api)
 - **NewsApi**: [free API key](https://newsapi.org/register)
 - **GitHub**: [personal access token](https://github.com/settings/tokens) (no scopes needed for public repos)
@@ -220,8 +214,6 @@ dotnet test
   }
 }
 ```
-
-API keys in `appsettings.json` must be empty — they're set via `dotnet user-secrets`. `BaseUrl` values must have trailing slashes to avoid HttpClient path segment replacement.
 
 ## Usage Example
 
