@@ -8,6 +8,7 @@ namespace ApiAggregator.Infrastructure.Clients;
 
 public class GitHubClient(HttpClient http, IConfiguration config) : BaseApiClient(http)
 {
+    private const string EndpointPath = "search/repositories";
     private readonly string? _token = config["ExternalApis:GitHub:Token"];
 
     public override string Name => "GitHub";
@@ -18,7 +19,7 @@ public class GitHubClient(HttpClient http, IConfiguration config) : BaseApiClien
     {
         Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
 
-        var url = "search/repositories?q=stars:>1000&sort=stars&order=desc&per_page=10";
+        var url = $"{EndpointPath}?q=stars:>1000&sort=stars&order=desc&per_page=10";
         var response = await Http.GetAsync(url, ct);
         await EnsureSuccessOrThrowAsync(response, ct);
 

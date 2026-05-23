@@ -8,6 +8,7 @@ namespace ApiAggregator.Infrastructure.Clients;
 
 public class OpenWeatherMapClient : BaseApiClient
 {
+    private const string EndpointPath = "weather";
     private readonly string _apiKey;
     private readonly string[] _cities;
 
@@ -26,7 +27,7 @@ public class OpenWeatherMapClient : BaseApiClient
     {
         var tasks = _cities.Select(async city =>
         {
-            var url = $"weather?q={city}&units=metric&appid={_apiKey}";
+            var url = $"{EndpointPath}?q={city}&units=metric&appid={_apiKey}";
             var response = await Http.GetAsync(url, ct);
             await EnsureSuccessOrThrowAsync(response, ct);
 

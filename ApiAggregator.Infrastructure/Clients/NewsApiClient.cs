@@ -8,6 +8,7 @@ namespace ApiAggregator.Infrastructure.Clients;
 
 public class NewsApiClient : BaseApiClient
 {
+    private const string EndpointPath = "top-headlines";
     private readonly string _apiKey;
     private readonly string _country;
 
@@ -24,7 +25,7 @@ public class NewsApiClient : BaseApiClient
 
     protected override async Task<List<AggregatedItem>> FetchFromApiAsync(CancellationToken ct)
     {
-        var url = $"top-headlines?country={_country}&pageSize=20&apiKey={_apiKey}";
+        var url = $"{EndpointPath}?country={_country}&pageSize=20&apiKey={_apiKey}";
         var response = await Http.GetAsync(url, ct);
         await EnsureSuccessOrThrowAsync(response, ct);
 
