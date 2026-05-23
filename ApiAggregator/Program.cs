@@ -78,7 +78,8 @@ builder.Services.AddHttpClient<IExternalApiClient, NewsApiClient>(client =>
 
 builder.Services.AddHttpClient<IExternalApiClient, GitHubClient>(client =>
 {
-    client.BaseAddress = new Uri("https://api.github.com");
+    client.BaseAddress = new Uri(builder.Configuration["ExternalApis:GitHub:BaseUrl"]
+        ?? "https://api.github.com");
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 
