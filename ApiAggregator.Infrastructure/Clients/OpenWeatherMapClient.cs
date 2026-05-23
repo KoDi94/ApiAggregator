@@ -24,8 +24,7 @@ public class OpenWeatherMapClient : BaseApiClient
 
     protected override async Task<List<AggregatedItem>> FetchFromApiAsync(CancellationToken ct)
     {
-        var items = new List<AggregatedItem>();
-        foreach (var city in _cities)
+        var tasks = _cities.Select(async city =>
         {
             var url = $"weather?q={city}&units=metric&appid={_apiKey}";
             var response = await Http.GetAsync(url, ct);
@@ -34,7 +33,7 @@ public class OpenWeatherMapClient : BaseApiClient
             var data = await response.Content.ReadFromJsonAsync<WeatherResponse>(ct);
             if (data?.Weather.Length > 0)
             {
-                items.Add(new AggregatedItem
+                return new AggregatedItem
                 {
                     Id = $"weather-{Guid.NewGuid():N}",
                     Title = $"Weather in {data.Name}",
@@ -50,10 +49,13 @@ public class OpenWeatherMapClient : BaseApiClient
                         ["Humidity"] = data.Main.Humidity,
                         ["Condition"] = data.Weather[0].Description
                     }
-                });
+                };
             }
-        }
-        return items;
+            return null;
+        });
+
+        var results = await Task.WhenAll(tasks);
+        return results.Where(r => r != null).ToList()!;
     }
 
     private class WeatherResponse

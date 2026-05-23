@@ -24,38 +24,28 @@ public class NewsApiClient : BaseApiClient
 
     protected override async Task<List<AggregatedItem>> FetchFromApiAsync(CancellationToken ct)
     {
-        var items = new List<AggregatedItem>();
-        var categories = new[] { "business", "technology", "science", "health", "sports", "entertainment" };
-        foreach (var category in categories)
-        {
-            var url = $"top-headlines?country={_country}&category={category}&pageSize=1&apiKey={_apiKey}";
-            var response = await Http.GetAsync(url, ct);
-            await EnsureSuccessOrThrowAsync(response, ct);
+        var url = $"top-headlines?country={_country}&pageSize=20&apiKey={_apiKey}";
+        var response = await Http.GetAsync(url, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
 
-            var data = await response.Content.ReadFromJsonAsync<NewsResponse>(ct);
-            if (data?.Articles != null)
+        var data = await response.Content.ReadFromJsonAsync<NewsResponse>(ct);
+        if (data?.Articles == null)
+            return [];
+
+        return data.Articles.Select(article => new AggregatedItem
+        {
+            Id = $"news-{Guid.NewGuid():N}",
+            Title = article.Title ?? "(no title)",
+            Description = article.Description ?? "(no description)",
+            Category = Category,
+            Source = Name,
+            Date = DateTime.TryParse(article.PublishedAt, out var d) ? d : DateTime.UtcNow,
+            Url = article.Url ?? "",
+            Metadata = new Dictionary<string, object>
             {
-                foreach (var article in data.Articles)
-                {
-                    items.Add(new AggregatedItem
-                    {
-                        Id = $"news-{Guid.NewGuid():N}",
-                        Title = article.Title ?? "(no title)",
-                        Description = article.Description ?? "(no description)",
-                        Category = category,
-                        Source = Name,
-                        Date = DateTime.TryParse(article.PublishedAt, out var d) ? d : DateTime.UtcNow,
-                        Url = article.Url ?? "",
-                        Metadata = new Dictionary<string, object>
-                        {
-                            ["Source"] = article.Source?.Name ?? "unknown",
-                            ["Category"] = category
-                        }
-                    });
-                }
+                ["Source"] = article.Source?.Name ?? "unknown"
             }
-        }
-        return items;
+        }).ToList();
     }
 
     private class NewsResponse
