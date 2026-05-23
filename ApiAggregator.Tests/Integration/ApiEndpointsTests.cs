@@ -46,7 +46,7 @@ public class ApiEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task AggregatedEndpoint_ReturnsData_WithValidToken()
+    public async Task AggregatedEndpoint_ReturnsEmpty_WhenNoKeysConfigured()
     {
         var client = _factory.CreateClient();
         var token = await GetTokenAsync(client);
@@ -57,12 +57,13 @@ public class ApiEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadFromJsonAsync<AggregatedResponse>(JsonOptions);
         Assert.NotNull(content);
-        Assert.NotEmpty(content.Items);
+        Assert.Empty(content.Items);
+        Assert.NotEmpty(content.Errors);
         Assert.Equal(3, content.Sources.Count);
     }
 
     [Fact]
-    public async Task AggregatedEndpoint_FiltersByCategory()
+    public async Task AggregatedEndpoint_ReturnsOk_WithValidToken()
     {
         var client = _factory.CreateClient();
         var token = await GetTokenAsync(client);
@@ -73,7 +74,6 @@ public class ApiEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadFromJsonAsync<AggregatedResponse>(JsonOptions);
         Assert.NotNull(content);
-        Assert.All(content.Items, item => Assert.Equal("Weather", item.Category));
     }
 
     [Fact]

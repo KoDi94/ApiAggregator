@@ -6,116 +6,56 @@ using Microsoft.Extensions.Configuration;
 
 namespace ApiAggregator.Infrastructure.Clients;
 
-public class NewsApiClient : IExternalApiClient
+public class NewsApiClient : BaseApiClient
 {
-    private readonly HttpClient _http;
     private readonly string _apiKey;
     private readonly string _country;
 
-    public NewsApiClient(HttpClient http, IConfiguration config)
+    public NewsApiClient(HttpClient http, IConfiguration config) : base(http)
     {
-        _http = http;
         var section = config.GetSection("ExternalApis:NewsApi");
         _apiKey = section["ApiKey"] ?? "";
         _country = section["Country"] ?? "us";
     }
 
-    public string Name => "NewsApi";
-    public string Category => "News";
+    public override string Name => "NewsApi";
+    public override string Category => "News";
+    protected override bool HasCredentials => !string.IsNullOrEmpty(_apiKey);
 
-    public async Task<ApiClientResult> FetchAsync(CancellationToken cancellationToken = default)
+    protected override async Task<List<AggregatedItem>> FetchFromApiAsync(CancellationToken ct)
     {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        await Task.Delay(100, cancellationToken);
-
-        if (string.IsNullOrEmpty(_apiKey))
+        var items = new List<AggregatedItem>();
+        var categories = new[] { "business", "technology", "science", "health", "sports", "entertainment" };
+        foreach (var category in categories)
         {
-            sw.Stop();
-            return new ApiClientResult
-            {
-                Success = true, Source = Name, Data = GetFallbackData(),
-                ResponseTimeMs = sw.ElapsedMilliseconds
-            };
-        }
+            var url = $"top-headlines?country={_country}&category={category}&pageSize=1&apiKey={_apiKey}";
+            var response = await Http.GetAsync(url, ct);
+            response.EnsureSuccessStatusCode();
 
-        try
-        {
-            var items = new List<AggregatedItem>();
-            var categories = new[] { "business", "technology", "science", "health", "sports", "entertainment" };
-            foreach (var category in categories)
+            var data = await response.Content.ReadFromJsonAsync<NewsResponse>(ct);
+            if (data?.Articles != null)
             {
-                var url = $"top-headlines?country={_country}&category={category}&pageSize=1&apiKey={_apiKey}";
-                var response = await _http.GetAsync(url, cancellationToken);
-                response.EnsureSuccessStatusCode();
-
-                var data = await response.Content.ReadFromJsonAsync<NewsResponse>(cancellationToken);
-                if (data?.Articles != null)
+                foreach (var article in data.Articles)
                 {
-                    foreach (var article in data.Articles)
+                    items.Add(new AggregatedItem
                     {
-                        items.Add(new AggregatedItem
+                        Id = $"news-{Guid.NewGuid():N}",
+                        Title = article.Title ?? "(no title)",
+                        Description = article.Description ?? "(no description)",
+                        Category = category,
+                        Source = Name,
+                        Date = DateTime.TryParse(article.PublishedAt, out var d) ? d : DateTime.UtcNow,
+                        Url = article.Url ?? "",
+                        Metadata = new Dictionary<string, object>
                         {
-                            Id = $"news-{Guid.NewGuid():N}",
-                            Title = article.Title ?? "(no title)",
-                            Description = article.Description ?? "(no description)",
-                            Category = category,
-                            Source = Name,
-                            Date = DateTime.TryParse(article.PublishedAt, out var d) ? d : DateTime.UtcNow,
-                            Url = article.Url ?? "",
-                            Metadata = new Dictionary<string, object>
-                            {
-                                ["Source"] = article.Source?.Name ?? "unknown",
-                                ["Category"] = category
-                            }
-                        });
-                    }
+                            ["Source"] = article.Source?.Name ?? "unknown",
+                            ["Category"] = category
+                        }
+                    });
                 }
             }
-
-            sw.Stop();
-            return new ApiClientResult
-            {
-                Success = true, Source = Name, Data = items, ResponseTimeMs = sw.ElapsedMilliseconds
-            };
         }
-        catch (Exception ex)
-        {
-            sw.Stop();
-            return new ApiClientResult
-            {
-                Success = true, Source = Name, Data = GetFallbackData(),
-                ErrorMessage = $"NewsAPI error: {ex.Message}",
-                ResponseTimeMs = sw.ElapsedMilliseconds
-            };
-        }
-    }
-
-    private static List<AggregatedItem> GetFallbackData()
-    {
-        var headlines = new[]
-        {
-            ("Tech Giant Announces New AI Platform", "technology"),
-            ("Markets Reach All-Time High", "business"),
-            ("Breakthrough in Renewable Energy", "science"),
-            ("New Study Links Diet to Longevity", "health"),
-            ("Championship Finals Set Record Viewership", "sports"),
-            ("Award-Winning Film Breaks Box Office Records", "entertainment")
-        };
-        return headlines.Select((h, i) => new AggregatedItem
-        {
-            Id = $"news-{Guid.NewGuid():N}",
-            Title = h.Item1,
-            Description = $"In recent developments, {h.Item1.ToLowerInvariant()}...",
-            Category = h.Item2,
-            Source = "NewsApi",
-            Date = DateTime.UtcNow.AddHours(-i * 4),
-            Url = "https://newsapi.org",
-            Metadata = new Dictionary<string, object>
-            {
-                ["Source"] = "fallback",
-                ["Category"] = h.Item2
-            }
-        }).ToList();
+        return items;
     }
 
     private class NewsResponse

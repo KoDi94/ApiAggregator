@@ -23,7 +23,7 @@ public class GitHubClientTests
     }
 
     [Fact]
-    public async Task FetchAsync_ReturnsFallbackData_WhenTokenMissing()
+    public async Task FetchAsync_ReturnsError_WhenTokenMissing()
     {
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
@@ -35,8 +35,8 @@ public class GitHubClientTests
 
         var result = await client.FetchAsync();
 
-        Assert.True(result.Success);
-        Assert.NotEmpty(result.Data);
+        Assert.False(result.Success);
+        Assert.Contains("not configured", result.ErrorMessage);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class GitHubClientTests
             ["ExternalApis:GitHub:Token"] = withToken ? "test-token" : ""
         }).Build();
 
-        var http = new HttpClient(new FakeHandler(json));
+        var http = new HttpClient(new FakeHandler(json)) { BaseAddress = new Uri("https://api.github.com") };
         return new GitHubClient(http, config);
     }
 

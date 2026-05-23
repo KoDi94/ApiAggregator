@@ -23,7 +23,7 @@ public class NewsApiClientTests
     }
 
     [Fact]
-    public async Task FetchAsync_ReturnsFallbackData_WhenApiKeyMissing()
+    public async Task FetchAsync_ReturnsError_WhenApiKeyMissing()
     {
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
@@ -35,8 +35,8 @@ public class NewsApiClientTests
 
         var result = await client.FetchAsync();
 
-        Assert.True(result.Success);
-        Assert.NotEmpty(result.Data);
+        Assert.False(result.Success);
+        Assert.Contains("not configured", result.ErrorMessage);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class NewsApiClientTests
             ["ExternalApis:NewsApi:Country"] = "us"
         }).Build();
 
-        var http = new HttpClient(new FakeHandler(json));
+        var http = new HttpClient(new FakeHandler(json)) { BaseAddress = new Uri("https://newsapi.org/v2") };
         return new NewsApiClient(http, config);
     }
 

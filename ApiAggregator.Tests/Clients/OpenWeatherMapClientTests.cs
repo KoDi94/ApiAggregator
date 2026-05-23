@@ -23,7 +23,7 @@ public class OpenWeatherMapClientTests
     }
 
     [Fact]
-    public async Task FetchAsync_ReturnsFallbackData_WhenApiKeyMissing()
+    public async Task FetchAsync_ReturnsError_WhenApiKeyMissing()
     {
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
@@ -35,8 +35,8 @@ public class OpenWeatherMapClientTests
 
         var result = await client.FetchAsync();
 
-        Assert.True(result.Success);
-        Assert.NotEmpty(result.Data);
+        Assert.False(result.Success);
+        Assert.Contains("not configured", result.ErrorMessage);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class OpenWeatherMapClientTests
             ["ExternalApis:OpenWeatherMap:Cities:0"] = "London"
         }).Build();
 
-        var http = new HttpClient(new FakeHandler(json));
+        var http = new HttpClient(new FakeHandler(json)) { BaseAddress = new Uri("https://api.openweathermap.org/data/2.5") };
         return new OpenWeatherMapClient(http, config);
     }
 

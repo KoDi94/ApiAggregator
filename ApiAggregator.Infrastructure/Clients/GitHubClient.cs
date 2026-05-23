@@ -6,118 +6,50 @@ using Microsoft.Extensions.Configuration;
 
 namespace ApiAggregator.Infrastructure.Clients;
 
-public class GitHubClient : IExternalApiClient
+public class GitHubClient(HttpClient http, IConfiguration config) : BaseApiClient(http)
 {
-    private readonly HttpClient _http;
-    private readonly string? _token;
+    private readonly string? _token = config["ExternalApis:GitHub:Token"];
 
-    public GitHubClient(HttpClient http, IConfiguration config)
+    public override string Name => "GitHub";
+    public override string Category => "Development";
+    protected override bool HasCredentials => !string.IsNullOrEmpty(_token);
+
+    protected override async Task<List<AggregatedItem>> FetchFromApiAsync(CancellationToken ct)
     {
-        _http = http;
-        _token = config["ExternalApis:GitHub:Token"];
-    }
+        Http.DefaultRequestHeaders.UserAgent.ParseAdd("ApiAggregator/1.0");
+        Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
 
-    public string Name => "GitHub";
-    public string Category => "Development";
+        var url = "search/repositories?q=stars:>1000&sort=stars&order=desc&per_page=10";
+        var response = await Http.GetAsync(url, ct);
+        response.EnsureSuccessStatusCode();
 
-    public async Task<ApiClientResult> FetchAsync(CancellationToken cancellationToken = default)
-    {
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var data = await response.Content.ReadFromJsonAsync<GitHubSearchResponse>(ct);
+        var items = new List<AggregatedItem>();
 
-        if (string.IsNullOrEmpty(_token))
+        if (data?.Items != null)
         {
-            sw.Stop();
-            return new ApiClientResult
+            foreach (var repo in data.Items)
             {
-                Success = true, Source = Name, Data = GetFallbackData(),
-                ResponseTimeMs = sw.ElapsedMilliseconds
-            };
-        }
-
-        try
-        {
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("ApiAggregator/1.0");
-            _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
-
-            var url = "search/repositories?q=stars:>1000&sort=stars&order=desc&per_page=10";
-            var response = await _http.GetAsync(url, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var data = await response.Content.ReadFromJsonAsync<GitHubSearchResponse>(cancellationToken);
-            var items = new List<AggregatedItem>();
-
-            if (data?.Items != null)
-            {
-                foreach (var repo in data.Items)
+                items.Add(new AggregatedItem
                 {
-                    items.Add(new AggregatedItem
+                    Id = $"github-{repo.Id}",
+                    Title = repo.FullName ?? "(untitled)",
+                    Description = repo.Description ?? "(no description)",
+                    Category = "Development",
+                    Source = Name,
+                    Date = repo.CreatedAt,
+                    Url = repo.HtmlUrl ?? "",
+                    Metadata = new Dictionary<string, object>
                     {
-                        Id = $"github-{repo.Id}",
-                        Title = repo.FullName ?? "(untitled)",
-                        Description = repo.Description ?? "(no description)",
-                        Category = "Development",
-                        Source = Name,
-                        Date = repo.CreatedAt,
-                        Url = repo.HtmlUrl ?? "",
-                        Metadata = new Dictionary<string, object>
-                        {
-                            ["Stars"] = repo.StargazersCount,
-                            ["Language"] = repo.Language ?? "Unknown",
-                            ["Forks"] = repo.ForksCount
-                        }
-                    });
-                }
+                        ["Stars"] = repo.StargazersCount,
+                        ["Language"] = repo.Language ?? "Unknown",
+                        ["Forks"] = repo.ForksCount
+                    }
+                });
             }
-
-            sw.Stop();
-            return new ApiClientResult
-            {
-                Success = true, Source = Name, Data = items, ResponseTimeMs = sw.ElapsedMilliseconds
-            };
         }
-        catch (Exception ex)
-        {
-            sw.Stop();
-            return new ApiClientResult
-            {
-                Success = true, Source = Name, Data = GetFallbackData(),
-                ErrorMessage = $"GitHub error: {ex.Message}",
-                ResponseTimeMs = sw.ElapsedMilliseconds
-            };
-        }
-    }
 
-    private static List<AggregatedItem> GetFallbackData()
-    {
-        var repos = new[]
-        {
-            "dotnet/runtime", "microsoft/vscode", "torvalds/linux",
-            "facebook/react", "docker/compose"
-        };
-        var descriptions = new[]
-        {
-            "Cross-platform runtime for .NET", "Visual Studio Code editor",
-            "Linux kernel source tree", "A declarative UI library",
-            "Define and run multi-container applications"
-        };
-        var languages = new[] { "C#", "TypeScript", "C", "JavaScript", "Go" };
-        var rng = new Random();
-        return Enumerable.Range(1, 5).Select(i => new AggregatedItem
-        {
-            Id = $"github-{Guid.NewGuid():N}",
-            Title = repos[i % repos.Length],
-            Description = descriptions[i % descriptions.Length],
-            Category = "Development",
-            Source = "GitHub",
-            Date = DateTime.UtcNow.AddDays(-rng.Next(0, 60)),
-            Url = $"https://github.com/{repos[i % repos.Length]}",
-            Metadata = new Dictionary<string, object>
-            {
-                ["Stars"] = rng.Next(100, 100000),
-                ["Language"] = languages[i % languages.Length],
-                ["Source"] = "fallback"
-            }
-        }).ToList();
+        return items;
     }
 
     private class GitHubSearchResponse
